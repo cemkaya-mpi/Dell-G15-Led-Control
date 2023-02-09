@@ -1,59 +1,60 @@
 #!/usr/bin/python3
 import sys
+import argparse
 import random
 from elc import *
 from elc_constants import *
 
 
-DURATION_MAX=0xffff
-DURATION_BATTERY_LOW=0xff
-DURATION_MIN=0x00
-TEMPO_MAX=0xff
-TEMPO_MIN=0x01
+DURATION_MAX = 0xffff
+DURATION_BATTERY_LOW = 0xff
+DURATION_MIN = 0x00
+TEMPO_MAX = 0xff
+TEMPO_MIN = 0x01
+
 
 def main():
-    command = "on"
-    red = 0
-    green = 0
-    blue = 0
-    dim=255
-    if (len(sys.argv) == 5):  # With rgb values given by user
-        command = sys.argv[1]
-        red = int(sys.argv[2])
-        green = int(sys.argv[3])
-        blue = int(sys.argv[4])
-        dim=0
-    elif (len(sys.argv) == 2):  # No rgb values specified.
-        command = sys.argv[1]
-        if (command == "on"):
-            red = 255
-            green = 255
-            blue = 255
-            dim=0
-        elif (command == "off"):
-            red = 0
-            green = 0
-            blue = 0
-            dim=255
-        elif (command == "morph"):  # Random morph colors
-            red = random.randint(0, 255)
-            green = random.randint(0, 255)
-            blue = random.randint(0, 255)
-            dim=0
-    else:
-        print("Usage:")
-        print("awcc.py off                      -> Turn lights off.")
-        print("awcc.py on                       -> Turn lights on, white.")
-        print("awcc.py on red green blue        -> Turn lights on, with given colors.")
-        print("awcc.py morph                    -> Turn lights on, with morph effect, random colors.")
-        print("awcc.py morph red green blue     -> Turn lights on, with morph effect, given colors.")
-        print()
-        print("Range for red,green,blue is 0-255")
-        print("eg.: awcc.py on 255 255 255      -> Bright white")
-        print("eg.: awcc.py on 128 128 128      -> Dim white")
+    #Argument parser
+    parser = argparse.ArgumentParser("awelc")
+    parser.add_argument("-c", "--command",  dest="command",
+                        help="on/off/morph commands are supported.", type=str, choices=["on", "off", "morph"])
+    parser.add_argument("-r", "--red",  dest="red",
+                        help="An integer in range [0-255].", type=int, default=-1)
+    parser.add_argument("-g", "--green", dest="green",
+                        help="An integer in range [0-255].", type=int, default=-1)
+    parser.add_argument("-b", "--blue", dest="blue",
+                        help="An integer in range [0-255].", type=int, default=-1)
+    args = parser.parse_args()
+    
+    #Get user parameters
+    command = args.command
+    red = args.red
+    green = args.green
+    blue = args.blue
 
+    #RGB values not given or incomplete.
+    if (command == "on" and (red==-1 or green==-1 or blue==-1)):
+        red = 255
+        green = 255
+        blue = 255
+    elif (command == "off" and (red==-1 or green==-1 or blue==-1)):
+        red = 0
+        green = 0
+        blue = 0
+    elif (command == "morph" and (red==-1 or green==-1 or blue==-1)):  # Random morph colors
+        red = random.randint(0, 255)
+        green = random.randint(0, 255)
+        blue = random.randint(0, 255)
+
+    #Sanity check.
+    assert(red>=0 and red<=255)
+    assert(green>=0 and green<=255)
+    assert(blue>=0 and blue<=255)
+    
+    #Print operation type
     print("Operation:%s" % (command))
     print("Red:%d, Green:%d, Blue:%d" % (red, green, blue))
+
     # So that we don't get an USB device busy error
     device = usb.core.find(idVendor=0x187c, idProduct=0x0550)
     ep = device[0].interfaces()[0].endpoints()[0]
@@ -61,6 +62,7 @@ def main():
     device.reset()
     if device.is_kernel_driver_active(i):
         device.detach_kernel_driver(i)
+    
     # Create the elc object
     vid = 0x187C
     pid = 0x0550
@@ -69,10 +71,10 @@ def main():
     # Define zones
     zones = [0, 1, 2, 3]
 
-    # White color is default, test this line to see if it works at all!
+    # Test this line to see if it works at all! You should see a flash of given color.
     # elc.set_color(zones,red,green,blue) # White
-    
-    # elc.dim(zones, dim)                # No dimming
+    # elc.dim(zones, dim)                 # Dimming
+
 
     # Off on AC Sleep
     elc.remove_animation(AC_SLEEP)
@@ -91,7 +93,8 @@ def main():
                        blue, red), Action(MORPH, DURATION_MAX, TEMPO_MIN, blue, red, green)))  # Morph based on given values.
     else:
         # Static color, 2 second duration, tempo tempo (who cares?)
-        elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, red, green, blue),))
+        elc.add_action(
+            (Action(COLOR, DURATION_MAX, TEMPO_MAX, red, green, blue),))
 
     elc.finish_save_animation(AC_CHARGED)
 
@@ -104,7 +107,8 @@ def main():
                        blue, red), Action(MORPH, DURATION_MAX, TEMPO_MIN, blue, red, green)))  # Morph based on given values.
     else:
         # Static color, 2 second duration, tempo tempo (who cares?)
-        elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, red, green, blue),))
+        elc.add_action(
+            (Action(COLOR, DURATION_MAX, TEMPO_MAX, red, green, blue),))
 
     elc.finish_save_animation(AC_CHARGING)
 
@@ -135,7 +139,8 @@ def main():
     elc.start_new_animation(DC_LOW)
     elc.start_series(zones)
     # Static color, 2 second duration, tempo tempo (who cares?)
-    elc.add_action((Action(COLOR, DURATION_BATTERY_LOW, TEMPO_MIN, 255, 0, 0),))
+    elc.add_action(
+        (Action(COLOR, DURATION_BATTERY_LOW, TEMPO_MIN, 255, 0, 0),))
     # Static color, 2 second duration, tempo tempo (who cares?)
     elc.add_action((Action(COLOR, DURATION_BATTERY_LOW, TEMPO_MIN, 0, 0, 0),))
     elc.finish_save_animation(DC_LOW)
@@ -161,6 +166,7 @@ def main():
     elc.finish_save_animation(RUNNING_FINISH)
     # if not device.is_kernel_driver_active(i):
     #     device.attach_kernel_driver(i)
+
 
 if __name__ == "__main__":
     main()
