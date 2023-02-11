@@ -18,6 +18,8 @@ def main():
     parser = argparse.ArgumentParser("awelc")
     parser.add_argument("-c", "--command",  dest="command",
                         help="on/off/morph commands are supported.", type=str, choices=["on", "off", "morph"])
+    parser.add_argument("-d", "--duration",  dest="duration",
+                        help="duration for morph.", type=int, default=0x5ff)
     parser.add_argument("-r", "--red",  dest="red",
                         help="An integer in range [0-255].", type=int, default=-1)
     parser.add_argument("-g", "--green", dest="green",
@@ -31,6 +33,7 @@ def main():
     red = args.red
     green = args.green
     blue = args.blue
+    duration=args.duration
 
     #RGB values not given or incomplete.
     if (command == "on" and (red==-1 or green==-1 or blue==-1)):
@@ -50,6 +53,8 @@ def main():
     assert(red>=0 and red<=255)
     assert(green>=0 and green<=255)
     assert(blue>=0 and blue<=255)
+    assert(duration>=0 and duration<=DURATION_MAX)
+
     
     #Print operation type
     print("Operation:%s" % (command))
@@ -83,34 +88,38 @@ def main():
     # Static color, 2 second duration, tempo tempo (who cares?)
     elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, 0, 0, 0),))
     elc.finish_save_animation(AC_SLEEP)
+    elc.set_default_animation(AC_SLEEP)
 
     # Full brightness on AC, charged
     elc.remove_animation(AC_CHARGED)
     elc.start_new_animation(AC_CHARGED)
     elc.start_series(zones)
     if command == "morph":
-        elc.add_action((Action(MORPH, DURATION_MAX, TEMPO_MIN, red, green, blue), Action(MORPH, DURATION_MAX, TEMPO_MIN, green,
-                       blue, red), Action(MORPH, DURATION_MAX, TEMPO_MIN, blue, red, green)))  # Morph based on given values.
+        elc.add_action((Action(MORPH, duration, TEMPO_MIN, red, green, blue), Action(MORPH, duration, TEMPO_MIN, green,
+                       blue, red), Action(MORPH, duration, TEMPO_MIN, blue, red, green)))  # Morph based on given values.
     else:
         # Static color, 2 second duration, tempo tempo (who cares?)
         elc.add_action(
             (Action(COLOR, DURATION_MAX, TEMPO_MAX, red, green, blue),))
 
     elc.finish_save_animation(AC_CHARGED)
+    elc.set_default_animation(AC_CHARGED)
 
     # Full brightness on AC, charging
     elc.remove_animation(AC_CHARGING)
     elc.start_new_animation(AC_CHARGING)
     elc.start_series(zones)
     if command == "morph":
-        elc.add_action((Action(MORPH, DURATION_MAX, TEMPO_MIN, red, green, blue), Action(MORPH, DURATION_MAX, TEMPO_MIN, green,
-                       blue, red), Action(MORPH, DURATION_MAX, TEMPO_MIN, blue, red, green)))  # Morph based on given values.
+        elc.add_action((Action(MORPH, duration, TEMPO_MIN, red, green, blue), Action(MORPH, duration, TEMPO_MIN, green,
+                       blue, red), Action(MORPH, duration, TEMPO_MIN, blue, red, green)))  # Morph based on given values.
     else:
         # Static color, 2 second duration, tempo tempo (who cares?)
         elc.add_action(
             (Action(COLOR, DURATION_MAX, TEMPO_MAX, red, green, blue),))
 
     elc.finish_save_animation(AC_CHARGING)
+    elc.set_default_animation(AC_CHARGING)
+
 
     # Off on DC Sleep
     elc.remove_animation(DC_SLEEP)
@@ -119,22 +128,25 @@ def main():
     # Static color, 2 second duration, tempo tempo (who cares?)
     elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, 0, 0, 0),))
     elc.finish_save_animation(DC_SLEEP)
+    elc.set_default_animation(DC_SLEEP)
 
     # Half brightness on Battery
     elc.remove_animation(DC_ON)
     elc.start_new_animation(DC_ON)
     elc.start_series(zones)
     if command == "morph":
-        elc.add_action((Action(MORPH, DURATION_MAX, TEMPO_MIN, int(red/2), int(green/2), int(blue/2)), Action(MORPH, DURATION_MAX, TEMPO_MIN, int(green/2),
-                       int(blue/2), int(red/2)), Action(MORPH, DURATION_MAX, TEMPO_MIN, int(blue/2), int(red/2), int(green/2))))  # Morph based on given values.
+        elc.add_action((Action(MORPH, duration, TEMPO_MIN, int(red/2), int(green/2), int(blue/2)), Action(MORPH, duration, TEMPO_MIN, int(green/2),
+                       int(blue/2), int(red/2)), Action(MORPH, duration, TEMPO_MIN, int(blue/2), int(red/2), int(green/2))))  # Morph based on given values.
     else:
         # Static color, 2 second duration, tempo tempo (who cares?)
         elc.add_action(
             (Action(COLOR, DURATION_MAX, TEMPO_MAX, int(red/2), int(green/2), int(blue/2)),))
 
     elc.finish_save_animation(DC_ON)
+    elc.set_default_animation(DC_ON)
 
-    # Red flashing on battery low. Use custom tempo
+
+    # Red flashing on battery low.
     elc.remove_animation(DC_LOW)
     elc.start_new_animation(DC_LOW)
     elc.start_series(zones)
@@ -144,29 +156,27 @@ def main():
     # Static color, 2 second duration, tempo tempo (who cares?)
     elc.add_action((Action(COLOR, DURATION_BATTERY_LOW, TEMPO_MIN, 0, 0, 0),))
     elc.finish_save_animation(DC_LOW)
+    elc.set_default_animation(DC_LOW)
 
     # Off on boot, start and finish
     elc.remove_animation(DEFAULT_POST_BOOT)
-    elc.start_new_animation(DEFAULT_POST_BOOT)
-    elc.start_series(zones)
-    # Static color, 2 second duration, tempo tempo (who cares?)
-    elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, 0, 0, 0),))
-    elc.finish_save_animation(DEFAULT_POST_BOOT)
+    
     elc.remove_animation(RUNNING_START)
     elc.start_new_animation(RUNNING_START)
     elc.start_series(zones)
-    # Static color, 2 second duration, tempo tempo (who cares?)
-    elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, 0, 0, 0),))
+    elc.add_action((Action(COLOR, 0, 0, 0, 0, 0),))
     elc.finish_save_animation(RUNNING_START)
+    elc.set_default_animation(RUNNING_START)
+
+    
     elc.remove_animation(RUNNING_FINISH)
     elc.start_new_animation(RUNNING_FINISH)
     elc.start_series(zones)
-    # Static color, 2 second duration, tempo tempo (who cares?)
-    elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, 0, 0, 0),))
+    elc.add_action((Action(COLOR, 0, 0, 0, 0, 0),))
     elc.finish_save_animation(RUNNING_FINISH)
-    # if not device.is_kernel_driver_active(i):
-    #     device.attach_kernel_driver(i)
-
+    elc.set_default_animation(RUNNING_FINISH)
+    
+    device.reset()
 
 if __name__ == "__main__":
     main()
