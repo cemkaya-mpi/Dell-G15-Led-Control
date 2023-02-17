@@ -158,9 +158,14 @@ def main():
     elc.finish_save_animation(DC_LOW)
     elc.set_default_animation(DC_LOW)
 
-    # Off on boot, start and finish
+    # Off on post-boot, start and finish
     elc.remove_animation(DEFAULT_POST_BOOT)
-    
+    elc.start_new_animation(DEFAULT_POST_BOOT)
+    elc.start_series(zones)
+    elc.add_action((Action(COLOR, DURATION_MAX, TEMPO_MAX, 0, 0, 0),))
+    elc.finish_save_animation(DEFAULT_POST_BOOT)
+    elc.set_default_animation(DEFAULT_POST_BOOT)
+
     elc.remove_animation(RUNNING_START)
     elc.start_new_animation(RUNNING_START)
     elc.start_series(zones)
